@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
+	"os"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -23,9 +23,14 @@ type Job struct {
 
 func main() {
 	// 1. Connect to Redis
-	rdb := redis.NewClient(&redis.Options{
-		Addr: redisAddr,
-	})
+	redisHost := os.Getenv("REDIS_ADDR")
+    if redisHost == "" {
+        redisHost = "localhost:6379"
+    }
+
+    rdb := redis.NewClient(&redis.Options{
+        Addr: redisHost,
+    })
 
 	fmt.Println("Worker started. Waiting for jobs...")
 

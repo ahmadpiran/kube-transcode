@@ -80,10 +80,15 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Initialize Redis
-	rdb = redis.NewClient(&redis.Options{
-		Addr: redisAddr,
-	})
+	// Read from ENV, default to localhost for local dev
+    redisHost := os.Getenv("REDIS_ADDR")
+    if redisHost == "" {
+        redisHost = "localhost:6379"
+    }
+
+    rdb = redis.NewClient(&redis.Options{
+        Addr: redisHost,
+    })
 
 	// Ping to check connection
 	if err := rdb.Ping(ctx).Err(); err != nil {
