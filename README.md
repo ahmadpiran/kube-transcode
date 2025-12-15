@@ -1,6 +1,6 @@
 # Kube-Transcode 
 
-**In-Progress**
+**(In-Progress)**
 
 A distributed image/video processing pipeline.
 
@@ -15,7 +15,7 @@ Worker (Go Deployment): Blocked on the queue, picked up the job, simulated proce
 
 
 
-# Usage
+## Usage
 
 As it uses `LoadBalancer` service type, you must deploy it on a public cloud(AWS/AZURE/GCP).
 
@@ -53,5 +53,5 @@ kubectl get pods -l app=worker
 kubectl logs <worker-pod-name>
 ```
 
-# License
+## License
 MIT
