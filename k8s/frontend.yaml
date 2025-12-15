@@ -11,7 +11,7 @@ spec:
     metadata:
       labels:
         app: frontend
-    specs:
+    spec:
       containers:
       - name: frontend
         image: ahmadpiran/kube-transcode-frontend:v1
