@@ -4,6 +4,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "=4.1.0"
     }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.7.2"
+    }
   }
 }
 
@@ -37,10 +42,39 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 }
 
+resource "azurerm_storage_account" "storage" {
+  name                     = "ktstor${random_id.suffix.hex}" # Must be globally unique
+  resource_group_name      = azurerm_resource_group.kube_transcode_rg.name
+  location                 = azurerm_resource_group.kube_transcode_rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+
+resource "azurerm_storage_share" "fshare" {
+  name                 = "transcode-share"
+  storage_account_name = azurerm_storage_account.storage.name
+  quota                = 5 # 5GB
+}
+
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
+
+
 output "resource_group_name" {
   value = azurerm_resource_group.kube_transcode_rg.name
 }
 
 output "kubernetes_cluster_name" {
   value = azurerm_kubernetes_cluster.aks.name
+}
+
+output "storage_account_name" {
+  value = azurerm_storage_account.storage.name
+}
+
+output "storage_primary_key" {
+  value = azurerm_storage_account.storage.primary_access_key
+  sensitive = true
 }
