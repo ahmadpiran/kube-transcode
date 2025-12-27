@@ -22,10 +22,12 @@ resource "azurerm_resource_group" "kube_transcode_rg" {
 }
 
 resource "azurerm_kubernetes_cluster" "aks" {
-  name                = "kube-transcode-aks"
-  location            = azurerm_resource_group.kube_transcode_rg.location
-  resource_group_name = azurerm_resource_group.kube_transcode_rg.name
-  dns_prefix          = "kubetranscode"
+  name                      = "kube-transcode-aks"
+  location                  = azurerm_resource_group.kube_transcode_rg.location
+  resource_group_name       = azurerm_resource_group.kube_transcode_rg.name
+  dns_prefix                = "kubetranscode"
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
 
   default_node_pool {
     name       = "default"
@@ -56,11 +58,33 @@ resource "azurerm_storage_share" "fshare" {
   quota                = 5 # 5GB
 }
 
+# Create managed identity for the Go app
+resource "azurerm_user_assigned_identity" "app_identity" {
+  name                = "kube-transcode-identity"
+  location            = azurerm_resource_group.kube_transcode_rg.location
+  resource_group_name = azurerm_resource_group.kube_transcode_rg.name
+}
+
+# Grant permission to storage account
+resource "azurerm_role_assignment" "storage_role" {
+  scope                = azurerm_storage_account.storage.id
+  role_definition_name = "Storage File Data SMB Share Contributor"
+  principal_id         = azurerm_user_assigned_identity.app_identity.principal_id
+}
+
+# Creating federated indentity credential, for linking K8s ServiceAccount to the Azure Identity
+resource "azurerm_federated_identity_credential" "fed_identity" {
+  name                = "kube-transcode-fed"
+  resource_group_name = azurerm_resource_group.kube_transcode_rg.name
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = azurerm_kubernetes_cluster.aks.oidc_issuer_url
+  parent_id           = azurerm_user_assigned_identity.app_identity.id
+  subject             = "system:serviceaccount:default:kube-transcode-sa"
+}
+
 resource "random_id" "suffix" {
   byte_length = 4
 }
-
-
 
 output "resource_group_name" {
   value = azurerm_resource_group.kube_transcode_rg.name
@@ -74,7 +98,6 @@ output "storage_account_name" {
   value = azurerm_storage_account.storage.name
 }
 
-output "storage_primary_key" {
-  value = azurerm_storage_account.storage.primary_access_key
-  sensitive = true
+output "client_id" {
+  value = azurerm_user_assigned_identity.app_identity.client_id
 }
